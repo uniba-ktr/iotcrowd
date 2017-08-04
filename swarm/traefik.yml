@@ -1,0 +1,39 @@
+version: '3.3'
+networks:
+  backend:
+
+services:
+  traefik:
+    image: traefik:latest
+    command: --docker --docker.swarmmode --docker.domain=traefik --docker.watch --web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - backend
+    deploy:
+      labels:
+        - "traefik.backend=traefik"
+        - "traefik.backend.loadbalancer.swarm=true"
+        - "traefik.port=8080"
+        - "traefik.docker.network=LB_backend"
+        - "traefik.frontend.rule=Host:docker.traefik"
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 64M
+        reservations:
+          cpus: '0.1'
+          memory: 32M
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 3
+        placement:
+          constraints:
+            - node.role == manager
+
